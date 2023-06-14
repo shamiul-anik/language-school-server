@@ -130,6 +130,15 @@ async function run() {
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
     });
+    
+    // Payment History for Students
+    app.get("/payment-history/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log("payment history email:", email);
+      const query = { student_email: email, payment_status: "paid" };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // Get User Information (to set role in Auth Provider)
     app.get("/users/:email", async (req, res) => {
