@@ -83,6 +83,14 @@ async function run() {
       const result = await classCollection.find().toArray();
       res.send(result);
     });
+    
+    app.get("/my-classes/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log("my-classes email:", email);
+      const query = { instructor_email: email };
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // Update Class Status as Approved
     app.patch("/class/approved/:id", async (req, res) => {
