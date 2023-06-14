@@ -83,7 +83,15 @@ async function run() {
       const result = await classCollection.find().toArray();
       res.send(result);
     });
+
+    // Approved Classes
+    app.get("/classes/approved", async (req, res) => {
+      const query = { class_status: "approved" };
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+    });
     
+    // My Classes for Instructors
     app.get("/my-classes/:email", async (req, res) => {
       const email = req.params.email;
       console.log("my-classes email:", email);
