@@ -83,10 +83,21 @@ async function run() {
       res.send(result);
     });
 
-    // Approved Classes
+    // Get Approved Classes
     app.get("/classes/approved", async (req, res) => {
       const query = { class_status: "approved" };
       const result = await classCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Get Popular Classes
+    app.get("/popular-classes", async (req, res) => {
+      const query = { class_status: "approved" };
+      const result = await classCollection
+        .find(query)
+        .sort({ enrolled_students: "desc" })
+        .limit(6)
+        .toArray();
       res.send(result);
     });
 
