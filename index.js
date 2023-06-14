@@ -76,17 +76,32 @@ async function run() {
       res.send(result);
     });
 
-    // Get All User Information
-    // TODO: verifyJWT and verifyAdmin
-    app.get("/users", async (req, res) => {
-      const result = await userCollection.find().toArray();
-      res.send(result);
-    });
-    
+
     // Get All Class Information
     // TODO: verifyJWT and verifyAdmin
     app.get("/classes", async (req, res) => {
       const result = await classCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Update Class Status as Approved
+    app.patch("/class/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log("Check Class ID: ", id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          class_status: "approved",
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // Get All User Information
+    // TODO: verifyJWT and verifyAdmin
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
       res.send(result);
     });
 
@@ -98,7 +113,7 @@ async function run() {
     // Update User's Role to Admin
     app.patch("/user/admin/:id", async (req, res) => {
       const id = req.params.id;
-      console.log("Check ID Admin: ", id);
+      // console.log("Check ID Admin: ", id);
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
@@ -112,7 +127,7 @@ async function run() {
     // Update User's Role to Instructor
     app.patch("/user/instructor/:id", async (req, res) => {
       const id = req.params.id;
-      console.log("Check ID Instructor: ", id);
+      // console.log("Check ID Instructor: ", id);
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
