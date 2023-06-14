@@ -111,6 +111,21 @@ async function run() {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+    
+    // Add Feedback
+    app.patch("/feedback/:id", async (req, res) => {
+      const id = req.params.id;
+      const {admin_feedback} = req.body;
+      // console.log("Check Feedback ID: ", id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          admin_feedback: admin_feedback,
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     // Get All User Information
     // TODO: verifyJWT and verifyAdmin
