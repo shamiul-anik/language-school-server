@@ -76,7 +76,6 @@ async function run() {
       res.send(result);
     });
 
-
     // Get All Class Information
     // TODO: verifyJWT and verifyAdmin
     app.get("/classes", async (req, res) => {
@@ -90,7 +89,7 @@ async function run() {
       const result = await classCollection.find(query).toArray();
       res.send(result);
     });
-    
+
     // My Classes for Instructors
     app.get("/my-classes/:email", async (req, res) => {
       const email = req.params.email;
@@ -113,7 +112,7 @@ async function run() {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-    
+
     // Update Class Status as Denied
     app.patch("/class/denied/:id", async (req, res) => {
       const id = req.params.id;
@@ -127,11 +126,11 @@ async function run() {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-    
+
     // Add Feedback
     app.patch("/feedback/:id", async (req, res) => {
       const id = req.params.id;
-      const {admin_feedback} = req.body;
+      const { admin_feedback } = req.body;
       // console.log("Check Feedback ID: ", id);
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
@@ -147,6 +146,13 @@ async function run() {
     // TODO: verifyJWT and verifyAdmin
     app.get("/users", async (req, res) => {
       const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Get All Instructor's Information
+    app.get("/instructors", async (req, res) => {
+      const query = { role: "instructor" };
+      const result = await userCollection.find(query).toArray();
       res.send(result);
     });
 
