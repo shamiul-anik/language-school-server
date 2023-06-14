@@ -37,18 +37,34 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("languageSchoolDB").collection("users");
+    const classCollection = client.db("languageSchoolDB").collection("classes");
 
     // Save User Information and Role in DB
     app.put("/users/:email", async (req, res) => {
       const email = req.params.email;
       const user = req.body;
       console.log(user);
+
       const query = { email: email };
+      const existingUser = await userCollection.findOne(query);
+
+      if (existingUser) {
+        return res.send({ message: "User already exists!" });
+      }
+
       const options = { upsert: true };
       const updateDoc = {
         $set: user,
       };
       const result = await userCollection.updateOne(query, updateDoc, options);
+      res.send(result);
+    });
+
+    // Add a Class
+    app.post("/add-a-class", async (req, res) => {
+      const classDetails = req.body;
+      console.log("New Class Details: ", classDetails);
+      const result = await classCollection.insertOne(classDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
       res.send(result);
     });
 
