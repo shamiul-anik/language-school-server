@@ -110,6 +110,13 @@ async function run() {
       res.send(result);
     });
 
+    // Get Popular Instructors
+    app.get("/popular-instructors", async (req, res) => {
+      const query = { role: "instructor" };
+      const result = await userCollection.find(query).limit(6).toArray();
+      res.send(result);
+    });
+
     // Update Class Status as Approved
     app.patch("/class/approved/:id", async (req, res) => {
       const id = req.params.id;
