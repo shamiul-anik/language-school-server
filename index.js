@@ -82,6 +82,13 @@ async function run() {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
+    
+    // Get All Class Information
+    // TODO: verifyJWT and verifyAdmin
+    app.get("/classes", async (req, res) => {
+      const result = await classCollection.find().toArray();
+      res.send(result);
+    });
 
     // app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
     //   const result = await usersCollection.find().toArray();
