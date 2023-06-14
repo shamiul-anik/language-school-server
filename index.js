@@ -66,16 +66,39 @@ async function run() {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
-    
 
     // app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
     //   const result = await usersCollection.find().toArray();
     //   res.send(result);
     // });
 
-    
+    // Update User's Role to Admin
+    app.patch("/user/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log("Check ID Admin: ", id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
-
+    // Update User's Role to Instructor
+    app.patch("/user/instructor/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log("Check ID Instructor: ", id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "instructor",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
