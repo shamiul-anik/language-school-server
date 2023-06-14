@@ -89,13 +89,27 @@ async function run() {
       const result = await bookingCollection.insertOne(classDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
       res.send(result);
     });
-    
+
     // Delete a Booking Data
     app.delete("/delete-booking/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       console.log("Detele Query Details: ", id, query);
       const result = await bookingCollection.deleteOne(query); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
+      res.send(result);
+    });
+
+    // Update Class Status as Approved
+    app.patch("/payment/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log("Check Booking ID for Payment: ", id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          payment_status: "paid",
+        },
+      };
+      const result = await bookingCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
