@@ -38,6 +38,7 @@ async function run() {
 
     const userCollection = client.db("languageSchoolDB").collection("users");
     const classCollection = client.db("languageSchoolDB").collection("classes");
+    const bookingCollection = client.db("languageSchoolDB").collection("bookings");
 
     // Save User Information and Role in DB
     app.put("/users/:email", async (req, res) => {
@@ -62,9 +63,26 @@ async function run() {
 
     // Add a Class
     app.post("/add-a-class", async (req, res) => {
+      const bookingDetails = req.body;
+      console.log("New Class Details: ", bookingDetails);
+      const result = await classCollection.insertOne(bookingDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
+      res.send(result);
+    });
+    
+    // Book a Class
+    app.post("/book-a-class", async (req, res) => {
       const classDetails = req.body;
       console.log("New Class Details: ", classDetails);
-      const result = await classCollection.insertOne(classDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
+
+      const classId = classDetails.class_id;
+      // console.log("Class ID: ", classId);
+      const query = { _id: new ObjectId(classId) };
+      const existingBooking = await classCollection.findOne(query);
+      if (existingBooking) {
+        return res.send({ message: "You have already booked this course!" });
+      }
+
+      const result = await bookingCollection.insertOne(classDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
       res.send(result);
     });
 
