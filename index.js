@@ -38,7 +38,9 @@ async function run() {
 
     const userCollection = client.db("languageSchoolDB").collection("users");
     const classCollection = client.db("languageSchoolDB").collection("classes");
-    const bookingCollection = client.db("languageSchoolDB").collection("bookings");
+    const bookingCollection = client
+      .db("languageSchoolDB")
+      .collection("bookings");
 
     // Save User Information and Role in DB
     app.put("/users/:email", async (req, res) => {
@@ -68,21 +70,50 @@ async function run() {
       const result = await classCollection.insertOne(bookingDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
       res.send(result);
     });
-    
+
     // Book a Class
     app.post("/book-a-class", async (req, res) => {
       const classDetails = req.body;
       console.log("New Class Details: ", classDetails);
 
-      const classId = classDetails.class_id;
-      // console.log("Class ID: ", classId);
-      const query = { _id: new ObjectId(classId) };
-      const existingBooking = await classCollection.findOne(query);
-      if (existingBooking) {
-        return res.send({ message: "You have already booked this course!" });
-      }
+      // const classId = classDetails.class_id;
+      // console.log("Class ID of Class Details: ", classId);
+      // const query = { _id: ObjectId(classId) };
+      // console.log("Query : ", query);
+      // const existingBooking = await classCollection.findOne(query);
+      // console.log("Existing Booking: ", existingBooking);
+      // if (existingBooking) {
+      //   return res.send({ message: "You have already booked this course!" });
+      // }
 
       const result = await bookingCollection.insertOne(classDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
+      res.send(result);
+    });
+    
+    // Delete a Booking Data
+    app.delete("/delete-booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      console.log("Detele Query Details: ", id, query);
+      const result = await bookingCollection.deleteOne(query); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
+      res.send(result);
+    });
+
+    // My Selected Classes for Students
+    app.get("/my-selected-classes/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log("my-classes email:", email);
+      const query = { student_email: email, payment_status: "unpaid" };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // My Enrolled Classes for Students
+    app.get("/my-enrolled-classes/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log("my-classes email:", email);
+      const query = { student_email: email, payment_status: "paid" };
+      const result = await bookingCollection.find(query).toArray();
       res.send(result);
     });
 
