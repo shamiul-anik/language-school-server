@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-// const jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 const morgan = require("morgan");
 require("dotenv").config();
 
@@ -19,6 +19,27 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(morgan("dev"));
 
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res
+      .status(401)
+      .send({ error: true, message: "Unauthorized access!" });
+  }
+  // bearer token
+  const token = authorization.split(" ")[1];
+
+  jwt.verify(token, process.env.SECRET_ACCESS_TOKEN, (err, decoded) => {
+    if (err) {
+      return res
+        .status(401)
+        .send({ error: true, message: "Unauthorized access!" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
+
 
 const uri = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_PASSWORD}@cluster0.s278t41.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -34,7 +55,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const userCollection = client.db("languageSchoolDB").collection("users");
     const classCollection = client.db("languageSchoolDB").collection("classes");
@@ -42,11 +63,65 @@ async function run() {
       .db("languageSchoolDB")
       .collection("bookings");
 
+    // JWT Token Create
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      // console.log("User: ", user);
+
+      const token = jwt.sign(user, process.env.SECRET_ACCESS_TOKEN, {
+        expiresIn: "1d",
+      });
+      console.log("Token: ", token);
+      res.send({ token });
+    });
+
+    // security layer: verifyJWT
+    // email same
+    // check admin
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ admin: false });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const result = { admin: user?.role === "admin" };
+      res.send(result);
+    });
+
+    // verifyAdmin (Warning: use verifyJWT before using verifyAdmin)
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res
+          .status(403)
+          .send({ error: true, message: "Access forbidden!" });
+      }
+      next();
+    };
+
+    // verifyInstructor (Warning: use verifyJWT before using verifyInstructor)
+    const verifyInstructor = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      if (user?.role !== "instructor") {
+        return res
+          .status(403)
+          .send({ error: true, message: "Access forbidden!" });
+      }
+      next();
+    };
+
     // Save User Information and Role in DB
     app.put("/users/:email", async (req, res) => {
       const email = req.params.email;
       const user = req.body;
-      console.log(user);
+      // console.log(user);
 
       const query = { email: email };
       const existingUser = await userCollection.findOne(query);
@@ -74,17 +149,12 @@ async function run() {
     // Book a Class
     app.post("/book-a-class", async (req, res) => {
       const classDetails = req.body;
-      console.log("New Class Details: ", classDetails);
-
-      // const classId = classDetails.class_id;
-      // console.log("Class ID of Class Details: ", classId);
-      // const query = { _id: ObjectId(classId) };
-      // console.log("Query : ", query);
-      // const existingBooking = await classCollection.findOne(query);
-      // console.log("Existing Booking: ", existingBooking);
-      // if (existingBooking) {
-      //   return res.send({ message: "You have already booked this course!" });
-      // }
+      const classId = classDetails.class_id;
+      const query = { class_id: classId };
+      const existingBooking = await bookingCollection.findOne(query);
+      if (existingBooking) {
+        return res.send({ message: "You have already booked this course!" });
+      }
 
       const result = await bookingCollection.insertOne(classDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
       res.send(result);
@@ -94,29 +164,44 @@ async function run() {
     app.delete("/delete-booking/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      console.log("Detele Query Details: ", id, query);
+      // console.log("Detele Query Details: ", id, query);
       const result = await bookingCollection.deleteOne(query); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
       res.send(result);
     });
 
-    // Update Class Status as Approved
-    app.patch("/payment/:id", async (req, res) => {
-      const id = req.params.id;
-      console.log("Check Booking ID for Payment: ", id);
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          payment_status: "paid",
-        },
-      };
-      const result = await bookingCollection.updateOne(filter, updateDoc);
-      res.send(result);
+    // Make Payment
+    app.patch("/make-payment/:id", async (req, res) => {
+      const bookingId = req.params.id;
+      const classId = req.query.classId;
+      
+      const classFilter = { _id: new ObjectId(classId) };
+      const updateSeat = { $inc: { available_seats: -1, enrolled_students: 1 } };
+      
+      const getClassSeats = await classCollection.findOne(classFilter);
+      if(getClassSeats.available_seats == 0) {
+        return res.send({ message: "No seat available in this course!" });
+      }
+      else {
+        const updateClassResult = await classCollection.updateOne(classFilter, updateSeat);
+
+        const bookingFilter = { _id: new ObjectId(bookingId) };
+        const updateBooking = { $set: { payment_status: "paid" } };
+        
+        if (updateClassResult.modifiedCount === 1) {
+          const updateBookingResult = await bookingCollection.updateOne(bookingFilter, updateBooking);
+          res.send({ updateClassResult, updateBookingResult });
+        } 
+        else {
+          res.send({message: "Failed to update class information!"});
+        }
+      }
+      
     });
 
     // My Selected Classes for Students
     app.get("/my-selected-classes/:email", async (req, res) => {
       const email = req.params.email;
-      console.log("my-classes email:", email);
+      // console.log("my-classes email:", email);
       const query = { student_email: email, payment_status: "unpaid" };
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
@@ -125,16 +210,16 @@ async function run() {
     // My Enrolled Classes for Students
     app.get("/my-enrolled-classes/:email", async (req, res) => {
       const email = req.params.email;
-      console.log("my-classes email:", email);
+      // console.log("my-classes email:", email);
       const query = { student_email: email, payment_status: "paid" };
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
     });
-    
+
     // Payment History for Students
     app.get("/payment-history/:email", async (req, res) => {
       const email = req.params.email;
-      console.log("payment history email:", email);
+      // console.log("payment history email:", email);
       const query = { student_email: email, payment_status: "paid" };
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
@@ -176,7 +261,7 @@ async function run() {
     // My Classes for Instructors
     app.get("/my-classes/:email", async (req, res) => {
       const email = req.params.email;
-      console.log("my-classes email:", email);
+      // console.log("my-classes email:", email);
       const query = { instructor_email: email };
       const result = await classCollection.find(query).toArray();
       res.send(result);
@@ -192,7 +277,7 @@ async function run() {
     // Update Class Status as Approved
     app.patch("/class/approved/:id", async (req, res) => {
       const id = req.params.id;
-      console.log("Check Class ID: ", id);
+      // console.log("Check Class ID: ", id);
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
@@ -206,7 +291,7 @@ async function run() {
     // Update Class Status as Denied
     app.patch("/class/denied/:id", async (req, res) => {
       const id = req.params.id;
-      console.log("Check Class ID: ", id);
+      // console.log("Check Class ID: ", id);
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
@@ -280,7 +365,8 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
+    client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You are successfully connected to MongoDB!"
     );
