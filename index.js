@@ -71,7 +71,7 @@ async function run() {
       const token = jwt.sign(user, process.env.SECRET_ACCESS_TOKEN, {
         expiresIn: "1d",
       });
-      console.log("Token: ", token);
+      // console.log("Token: ", token);
       res.send({ token });
     });
 
@@ -141,7 +141,7 @@ async function run() {
     // Add a Class
     app.post("/add-a-class", async (req, res) => {
       const bookingDetails = req.body;
-      console.log("New Class Details: ", bookingDetails);
+      // console.log("New Class Details: ", bookingDetails);
       const result = await classCollection.insertOne(bookingDetails); // Documentation: https://www.mongodb.com/docs/drivers/node/current/usage-examples/insertOne/
       res.send(result);
     });
@@ -212,7 +212,49 @@ async function run() {
         available_seats: 0,
         enrolled_students: 0,
       };
+
       const result = await bookingCollection.find(query).project(project).toArray();
+
+      // const resultWithAggregate = await bookingCollection
+      //   .aggregate([
+      //     {
+      //       $match: query,
+      //     },
+      //     {
+      //       $lookup: {
+      //         from: "classes",
+      //         localField: "class_id",
+      //         foreignField: "_id",
+      //         as: "classDetails",
+      //       },
+      //     },
+      //     {
+      //       $unwind: "$classDetails",
+      //     },
+      //     {
+      //       $project: {
+      //         _id: 1,
+      //         student_name: 1,
+      //         student_email: 1,
+      //         student_image: 1,
+      //         class_id: 1,
+      //         class_name: "$classDetails.class_name",
+      //         class_image: "$classDetails.class_image",
+      //         instructor_name: "$classDetails.instructor_name",
+      //         instructor_email: "$classDetails.instructor_email",
+      //         available_seats: "$classDetails.available_seats",
+      //         enrolled_students: "$classDetails.enrolled_students",
+      //         class_price: 1,
+      //         payment_status: 1,
+      //       },
+      //     },
+      //   ])
+      //   .toArray();
+      
+      // console.log("Selected Classes: ", resultWithAggregate);
+      // res.send(resultWithAggregate);
+
+
       res.send(result);
     });
 
@@ -221,7 +263,20 @@ async function run() {
       const email = req.params.email;
       // console.log("my-classes email:", email);
       const query = { student_email: email, payment_status: "paid" };
-      const result = await bookingCollection.find(query).toArray();
+
+      const project = {
+        student_name: 0,
+        student_email: 0,
+        student_image: 0,
+        class_id: 0,
+        available_seats: 0,
+        enrolled_students: 0,
+      };
+
+      const result = await bookingCollection
+        .find(query)
+        .project(project)
+        .toArray();
       res.send(result);
     });
 
@@ -230,7 +285,20 @@ async function run() {
       const email = req.params.email;
       // console.log("payment history email:", email);
       const query = { student_email: email, payment_status: "paid" };
-      const result = await bookingCollection.find(query).toArray();
+
+      const project = {
+        student_name: 0,
+        student_email: 0,
+        student_image: 0,
+        class_id: 0,
+        available_seats: 0,
+        enrolled_students: 0,
+      };
+
+      const result = await bookingCollection
+        .find(query)
+        .project(project)
+        .toArray();
       res.send(result);
     });
 
