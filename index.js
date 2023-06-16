@@ -59,9 +59,7 @@ async function run() {
 
     const userCollection = client.db("languageSchoolDB").collection("users");
     const classCollection = client.db("languageSchoolDB").collection("classes");
-    const bookingCollection = client
-      .db("languageSchoolDB")
-      .collection("bookings");
+    const bookingCollection = client.db("languageSchoolDB").collection("bookings");
 
     // JWT Token Create
     app.post("/jwt", (req, res) => {
@@ -204,52 +202,67 @@ async function run() {
       // console.log("my-classes email:", email);
       const query = { student_email: email, payment_status: "unpaid" };
 
-      const project = {
-        student_name: 0,
-        student_email: 0,
-        student_image: 0,
-        class_id: 0,
-        available_seats: 0,
-        enrolled_students: 0,
-      };
+      // const project = {
+      //   student_name: 0,
+      //   student_email: 0,
+      //   student_image: 0,
+      //   class_id: 0,
+      //   available_seats: 0,
+      //   enrolled_students: 0,
+      // };
 
-      const result = await bookingCollection.find(query).project(project).toArray();
+      // const result = await bookingCollection.find(query).project(project).toArray();
 
-      // const resultWithAggregate = await bookingCollection
-      //   .aggregate([
-      //     {
-      //       $match: query,
-      //     },
-      //     {
-      //       $lookup: {
-      //         from: "classes",
-      //         localField: "class_id",
-      //         foreignField: "_id",
-      //         as: "classDetails",
-      //       },
-      //     },
-      //     {
-      //       $unwind: "$classDetails",
-      //     },
-      //     {
-      //       $project: {
-      //         _id: 1,
-      //         student_name: 1,
-      //         student_email: 1,
-      //         student_image: 1,
-      //         class_id: 1,
-      //         class_name: "$classDetails.class_name",
-      //         class_image: "$classDetails.class_image",
-      //         instructor_name: "$classDetails.instructor_name",
-      //         instructor_email: "$classDetails.instructor_email",
-      //         available_seats: "$classDetails.available_seats",
-      //         enrolled_students: "$classDetails.enrolled_students",
-      //         class_price: 1,
-      //         payment_status: 1,
-      //       },
-      //     },
-      //   ])
-      //   .toArray();
+      const result = await bookingCollection
+        .aggregate([
+          {
+            $match: query,
+          },
+          {
+            $addFields: {
+              classId: {
+                $toObjectId: "$class_id",
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: "classes",
+              localField: "classId",
+              foreignField: "_id",
+              as: "classDetails",
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              // student_name: 1,
+              // student_email: 1,
+              // student_image: 1,
+              // class_id: 1,
+              class_name: { $arrayElemAt: ["$classDetails.class_name", 0] },
+              class_image: { $arrayElemAt: ["$classDetails.class_image", 0] },
+              instructor_name: {
+                $arrayElemAt: ["$classDetails.instructor_name", 0],
+              },
+              instructor_email: {
+                $arrayElemAt: ["$classDetails.instructor_email", 0],
+              },
+              available_seats: {
+                $arrayElemAt: ["$classDetails.available_seats", 0],
+              },
+              enrolled_students: {
+                $arrayElemAt: ["$classDetails.enrolled_students", 0],
+              },
+              class_price: {
+                $arrayElemAt: ["$classDetails.class_price", 0],
+              },
+              // class_price: 1,
+              payment_status: 1,
+            },
+          },
+        ])
+        .toArray();
       
       // console.log("Selected Classes: ", resultWithAggregate);
       // res.send(resultWithAggregate);
