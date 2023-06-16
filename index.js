@@ -203,7 +203,16 @@ async function run() {
       const email = req.params.email;
       // console.log("my-classes email:", email);
       const query = { student_email: email, payment_status: "unpaid" };
-      const result = await bookingCollection.find(query).toArray();
+
+      const project = {
+        student_name: 0,
+        student_email: 0,
+        student_image: 0,
+        class_id: 0,
+        available_seats: 0,
+        enrolled_students: 0,
+      };
+      const result = await bookingCollection.find(query).project(project).toArray();
       res.send(result);
     });
 
