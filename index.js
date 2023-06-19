@@ -19,6 +19,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(morgan("dev"));
 
+// JSON Web Token Verification
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization) {
@@ -61,7 +62,7 @@ async function run() {
     const classCollection = client.db("languageSchoolDB").collection("classes");
     const bookingCollection = client.db("languageSchoolDB").collection("bookings");
 
-    // JWT Token Create
+    // JWT Token Creation
     app.post("/jwt", (req, res) => {
       const user = req.body;
       // console.log("User: ", user);
@@ -76,18 +77,18 @@ async function run() {
     // security layer: verifyJWT
     // email same
     // check admin
-    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
-      const email = req.params.email;
+    // app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+    //   const email = req.params.email;
 
-      if (req.decoded.email !== email) {
-        res.send({ admin: false });
-      }
+    //   if (req.decoded.email !== email) {
+    //     res.send({ admin: false });
+    //   }
 
-      const query = { email: email };
-      const user = await userCollection.findOne(query);
-      const result = { admin: user?.role === "admin" };
-      res.send(result);
-    });
+    //   const query = { email: email };
+    //   const user = await userCollection.findOne(query);
+    //   const result = { admin: user?.role === "admin" };
+    //   res.send(result);
+    // });
 
     // verifyAdmin (Warning: use verifyJWT before using verifyAdmin)
     const verifyAdmin = async (req, res, next) => {
@@ -263,10 +264,9 @@ async function run() {
           },
         ])
         .toArray();
-      
+
       // console.log("Selected Classes: ", resultWithAggregate);
       // res.send(resultWithAggregate);
-
 
       res.send(result);
     });
@@ -320,13 +320,6 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const result = await userCollection.findOne(query);
-      res.send(result);
-    });
-
-    // Get All Class Information
-    // TODO: verifyJWT and verifyAdmin
-    app.get("/classes", async (req, res) => {
-      const result = await classCollection.find().toArray();
       res.send(result);
     });
 
@@ -407,13 +400,6 @@ async function run() {
       res.send(result);
     });
 
-    // Get All User Information
-    // TODO: verifyJWT and verifyAdmin
-    app.get("/users", async (req, res) => {
-      const result = await userCollection.find().toArray();
-      res.send(result);
-    });
-
     // Get All Instructor's Information
     app.get("/instructors", async (req, res) => {
       const query = { role: "instructor" };
@@ -421,13 +407,16 @@ async function run() {
       res.send(result);
     });
 
-    // app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
-    //   const result = await usersCollection.find().toArray();
-    //   res.send(result);
-    // });
+
+    /******* ADMIN *******/
+    // Get All User Information
+    app.get("/admin/manage-users", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     // Update User's Role to Admin
-    app.patch("/user/admin/:id", async (req, res) => {
+    app.patch("/admin/make-admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       // console.log("Check ID Admin: ", id);
       const filter = { _id: new ObjectId(id) };
@@ -441,7 +430,7 @@ async function run() {
     });
 
     // Update User's Role to Instructor
-    app.patch("/user/instructor/:id", async (req, res) => {
+    app.patch("/admin/make-instructor/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       // console.log("Check ID Instructor: ", id);
       const filter = { _id: new ObjectId(id) };
@@ -453,6 +442,16 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+
+    // Get All Class Information
+    app.get("/admin/manage-classes", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await classCollection.find().toArray();
+      res.send(result);
+    });
+
+
+
+
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
