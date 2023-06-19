@@ -194,7 +194,6 @@ async function run() {
           res.send({message: "Failed to update class information!"});
         }
       }
-      
     });
 
     // My Selected Classes for Students
@@ -357,8 +356,59 @@ async function run() {
       res.send(result);
     });
 
+    // Get All Instructor's Information
+    app.get("/instructors", async (req, res) => {
+      const query = { role: "instructor" };
+      const result = await userCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    /******* ADMIN *******/
+    // Get All User Information
+    app.get("/admin/manage-users", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Update User's Role to Admin
+      app.patch("/admin/make-admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
+        const id = req.params.id;
+        // console.log("Check ID Admin: ", id);
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            role: "admin",
+          },
+        };
+        const result = await userCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
+
+    // Update User's Role to Instructor
+    app.patch("/admin/make-instructor/:id", verifyJWT, verifyAdmin, async (req, res) => {
+        const id = req.params.id;
+        // console.log("Check ID Instructor: ", id);
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            role: "instructor",
+          },
+        };
+        const result = await userCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
+
+    // Get All Class Information
+    app.get("/admin/manage-classes", verifyJWT, verifyAdmin, async (req, res) => {
+        const result = await classCollection.find().toArray();
+        res.send(result);
+      }
+    );
+
     // Update Class Status as Approved
-    app.patch("/class/approved/:id", async (req, res) => {
+    app.patch("/admin/approve-class/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       // console.log("Check Class ID: ", id);
       const filter = { _id: new ObjectId(id) };
@@ -372,7 +422,7 @@ async function run() {
     });
 
     // Update Class Status as Denied
-    app.patch("/class/denied/:id", async (req, res) => {
+    app.patch("/admin/deny-class/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       // console.log("Check Class ID: ", id);
       const filter = { _id: new ObjectId(id) };
@@ -385,8 +435,8 @@ async function run() {
       res.send(result);
     });
 
-    // Add Feedback
-    app.patch("/feedback/:id", async (req, res) => {
+    // Send Feedback
+    app.patch("/admin/send-feedback/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const { admin_feedback } = req.body;
       // console.log("Check Feedback ID: ", id);
@@ -399,59 +449,6 @@ async function run() {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-
-    // Get All Instructor's Information
-    app.get("/instructors", async (req, res) => {
-      const query = { role: "instructor" };
-      const result = await userCollection.find(query).toArray();
-      res.send(result);
-    });
-
-
-    /******* ADMIN *******/
-    // Get All User Information
-    app.get("/admin/manage-users", verifyJWT, verifyAdmin, async (req, res) => {
-      const result = await userCollection.find().toArray();
-      res.send(result);
-    });
-
-    // Update User's Role to Admin
-    app.patch("/admin/make-admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      // console.log("Check ID Admin: ", id);
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          role: "admin",
-        },
-      };
-      const result = await userCollection.updateOne(filter, updateDoc);
-      res.send(result);
-    });
-
-    // Update User's Role to Instructor
-    app.patch("/admin/make-instructor/:id", verifyJWT, verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      // console.log("Check ID Instructor: ", id);
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          role: "instructor",
-        },
-      };
-      const result = await userCollection.updateOne(filter, updateDoc);
-      res.send(result);
-    });
-
-    // Get All Class Information
-    app.get("/admin/manage-classes", verifyJWT, verifyAdmin, async (req, res) => {
-      const result = await classCollection.find().toArray();
-      res.send(result);
-    });
-
-
-
-
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
