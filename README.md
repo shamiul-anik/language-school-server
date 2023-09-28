@@ -12,8 +12,12 @@ Open New Horizons: Immerse Yourself in the Art of Language at Language School â€
 #### Google Firebase: https://language-school-shamiul.web.app/
 <!-- #### Netlify:  -->
 
-## API Link:
-https://language-school-server-production.up.railway.app/
-
 ## Client Side Code Link:
-https://github.com/programming-hero-web-course1/b712-summer-camp-client-side-shamiul-anik
+https://github.com/shamiul-anik/language-school-client
+
+## Server Side Code Link:
+https://github.com/shamiul-anik/language-school-server
+
+
+## API Link:
+https://language-school-server-shamiul.vercel.app
